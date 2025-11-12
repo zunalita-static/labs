@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Redirecting...</title>
+
+<p>If JavaScript is disabled on the main page, this fallback will handle the redirect.</p>
+
+<script>
+const map = {
+  "https://":"h~","http://":"p~","www.":"w~",
+  ".com":".c",".org":".o",".net":".n"
+};
+
+function dec(s){
+  let u = atob(s.replace(/-/g,"+").replace(/_/g,"/"));
+  for (const [k,v] of Object.entries(map)) u = u.replaceAll(v,k);
+  if (!/^https?:\/\//.test(u)) u = "https://" + u;
+  return u;
+}
+
+(function(){
+  try {
+    // tenta obter a URL completa do topo (redirect.html)
+    const parentURL = window.top?.location?.href || document.referrer;
+    if (!parentURL) return;
+
+    const params = new URL(parentURL).searchParams;
+    const c = params.get("c");
+    const i = params.get("i");
+
+    if (i) {
+      // redirecionamento interno
+      const rel = decodeURIComponent(i);
+      const base = new URL(parentURL).origin;
+      const url = rel.startsWith("/") ? base + rel :
+        (rel === "/" ? base : base + "/" + rel);
+      console.log("→ Internal (noscript) redirect:", url);
+      window.top.location.replace(url);
+    } 
+    else if (c) {
+      // redirecionamento externo
+      const u = dec(c);
+      console.log("→ External (noscript) redirect:", u);
+      window.top.location.replace(u);
+    } 
+    else {
+      console.warn("No redirect parameters found in parent URL.");
+    }
+
+  } catch(err) {
+    console.error("noscript redirect failed:", err);
+  }
+})();
+</script>
+</html>
