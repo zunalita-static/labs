@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <title>Redirecting...</title>
 
-<p>If JavaScript is disabled on the main page, this fallback will handle the redirect.</p>
+<p id="status">Attempting redirection...</p>
 
 <script>
 const map = {
@@ -19,36 +19,50 @@ function dec(s){
 }
 
 (function(){
+  const log = msg => { console.log("[NS]", msg); document.getElementById("status").textContent = msg; };
+
   try {
-    // tenta obter a URL completa do topo (redirect.html)
-    const parentURL = window.top?.location?.href || document.referrer;
-    if (!parentURL) return;
+    let parentURL = "";
+    try {
+      // tenta pegar o topo (mesmo domínio)
+      parentURL = window.top?.location?.href || "";
+    } catch(e) {}
+
+    if (!parentURL && document.referrer) {
+      // se não conseguiu, tenta pelo referrer
+      parentURL = document.referrer;
+      log("Got referrer from parent.");
+    }
+
+    if (!parentURL) {
+      log("❌ No parent URL detected. Redirection aborted.");
+      return;
+    }
 
     const params = new URL(parentURL).searchParams;
     const c = params.get("c");
     const i = params.get("i");
 
     if (i) {
-      // redirecionamento interno
       const rel = decodeURIComponent(i);
       const base = new URL(parentURL).origin;
       const url = rel.startsWith("/") ? base + rel :
         (rel === "/" ? base : base + "/" + rel);
-      console.log("→ Internal (noscript) redirect:", url);
-      window.top.location.replace(url);
+      log("→ Redirecting internally...");
+      window.top.location.href = url;
     } 
     else if (c) {
-      // redirecionamento externo
       const u = dec(c);
-      console.log("→ External (noscript) redirect:", u);
-      window.top.location.replace(u);
+      log("→ Redirecting externally...");
+      window.top.location.href = u;
     } 
     else {
-      console.warn("No redirect parameters found in parent URL.");
+      log("⚠️ No redirect parameters found.");
     }
 
   } catch(err) {
-    console.error("noscript redirect failed:", err);
+    document.getElementById("status").textContent = "⚠️ Redirect failed: " + err;
+    console.error("[NS redirect error]", err);
   }
 })();
 </script>
