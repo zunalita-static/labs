@@ -5,12 +5,16 @@ on:
     types: [opened, reopened]
 
 jobs:
-  check-author:
+  block:
     runs-on: ubuntu-latest
 
+    permissions:
+      pull-requests: write
+      issues: write
+
     steps:
-      - name: Check if author is a member of the organization
-        id: membership
+      - name: Check org membership (raw API)
+        id: check
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -18,33 +22,35 @@ jobs:
             const org = context.repo.owner;
             const username = context.payload.pull_request.user.login;
 
+            let isMember = false;
+
             try {
-              await github.rest.orgs.checkMembershipForUser({
+              const res = await github.request("GET /orgs/{org}/members/{username}", {
                 org,
                 username
               });
-              return { allowed: true };
-            } catch (err) {
-              return { allowed: false };
+              isMember = res.status === 204;
+            } catch (e) {
+              isMember = false;
             }
 
-      - name: Reject PR if user is not a member
-        if: steps.membership.outputs.allowed == 'false'
+            core.setOutput("allowed", isMember);
+
+      - name: Reject PR
+        if: steps.check.outputs.allowed == 'false'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const pr = context.payload.pull_request.number;
 
-            // Post a message
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: pr,
-              body: "This pull request was automatically rejected because it was opened by a non-member of the organization."
+              body: "❌ This pull request was automatically rejected because it was opened by a non-member of the organization."
             });
 
-            // Close the PR
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
