@@ -1,0 +1,53 @@
+name: Reject PRs From Non-Org Members
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  check-author:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if author is a member of the organization
+        id: membership
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const org = context.repo.owner;
+            const username = context.payload.pull_request.user.login;
+
+            try {
+              await github.rest.orgs.checkMembershipForUser({
+                org,
+                username
+              });
+              return { allowed: true };
+            } catch (err) {
+              return { allowed: false };
+            }
+
+      - name: Reject PR if user is not a member
+        if: steps.membership.outputs.allowed == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request.number;
+
+            // Post a message
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body: "This pull request was automatically rejected because it was opened by a non-member of the organization."
+            });
+
+            // Close the PR
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr,
+              state: "closed"
+            });
