@@ -26,28 +26,20 @@ function dec(s){
 
 function isSafeRedirectUrl(u){
   try {
-    const trimmed = u.trim();
+    const url = new URL(u);
 
-    // Disallow obvious dangerous characters and whitespace-only values
-    if (!trimmed || /[\s<>"'`]/.test(trimmed)) {
+    // only http(s)
+    if (!['http:', 'https:'].includes(url.protocol)) {
       return false;
     }
 
-    // Reject protocol-relative URLs and explicit schemes
-    if (/^(?:[a-zA-Z][a-zA-Z0-9+.-]*:)?\/\//.test(trimmed)) {
-      return false;
-    }
-
-    // Allow only relative or root-relative URLs (no scheme/host in input)
-    const target = new URL(trimmed, location.origin);
-
-    // Ensure the redirect stays on the same origin
-    if (target.origin !== location.origin) {
+    // block possibly malware redirect (extra security)
+    if (/[<>"'`]/.test(u)) {
       return false;
     }
 
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -67,7 +59,7 @@ function gen(u){
     console.log("→ redirect:", u);
     if (isSafeRedirectUrl(u)) {
       const safeTarget = new URL(u.trim(), location.origin);
-      location.replace(safeTarget.toString());
+      location.replace(u));
     } else {
       console.warn("Unsafe redirect blocked:", u);
     }
