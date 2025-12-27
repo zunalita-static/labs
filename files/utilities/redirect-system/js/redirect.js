@@ -26,24 +26,23 @@ function dec(s){
 
 function isSafeRedirectUrl(u){
   try {
-    const target = new URL(u, location.href);
-    // Ensure the redirect stays on the same origin
-    if (target.origin !== location.origin) {
+    const trimmed = u.trim();
+
+    // Disallow obvious dangerous characters and whitespace-only values
+    if (!trimmed || /[\s<>"'`]/.test(trimmed)) {
       return false;
     }
 
-    // Only allow redirects to relative or root-relative URLs to avoid
-    // user-controlled absolute URLs being used for navigation.
-    // Examples of allowed values for `u`:
-    //   "/path", "path", "path?query", "/path?query#hash"
-    // Examples of disallowed values for `u`:
-    //   "http://example.com", "https://attacker.com/foo"
-    const trimmed = u.trim();
+    // Reject protocol-relative URLs and explicit schemes
+    if (/^(?:[a-zA-Z][a-zA-Z0-9+.-]*:)?\/\//.test(trimmed)) {
+      return false;
+    }
 
-    // If the user supplied an absolute URL, reject it even if it ends up
-    // resolving to the same origin, so that only application-internal,
-    // relative URLs are permitted.
-    if (/^https?:\/\//i.test(trimmed)) {
+    // Allow only relative or root-relative URLs (no scheme/host in input)
+    const target = new URL(trimmed, location.origin);
+
+    // Ensure the redirect stays on the same origin
+    if (target.origin !== location.origin) {
       return false;
     }
 
@@ -67,7 +66,8 @@ function gen(u){
     const u = dec(c);
     console.log("→ redirect:", u);
     if (isSafeRedirectUrl(u)) {
-      location.replace(u);
+      const safeTarget = new URL(u.trim(), location.origin);
+      location.replace(safeTarget.toString());
     } else {
       console.warn("Unsafe redirect blocked:", u);
     }
