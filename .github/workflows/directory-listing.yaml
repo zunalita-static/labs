@@ -6,15 +6,26 @@ on:
       - main
 
 permissions:
-  pages: write         
-  id-token: write    
-  contents: read   
+  pages: write
+  id-token: write
+  contents: read
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Prepare site
+        run: |
+          mkdir -p public
+          cp -r * public/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages
+          path: public/
 
       - name: Deploy to Pages
         uses: actions/deploy-pages@v4
