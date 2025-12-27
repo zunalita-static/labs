@@ -24,6 +24,15 @@ function dec(s){
   return u;
 }
 
+function isSafeRedirectUrl(u){
+  try {
+    const target = new URL(u, location.href);
+    return target.origin === location.origin;
+  } catch (e) {
+    return false;
+  }
+}
+
 function gen(u){
   const short = `${location.origin}${location.pathname}?c=${enc(u)}`;
   console.log("Short:", short);
@@ -37,7 +46,11 @@ function gen(u){
   if (c) {
     const u = dec(c);
     console.log("→ redirect:", u);
-    location.replace(u);
+    if (isSafeRedirectUrl(u)) {
+      location.replace(u);
+    } else {
+      console.warn("Unsafe redirect blocked:", u);
+    }
     return;
   }
 
