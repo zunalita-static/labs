@@ -27,7 +27,27 @@ function dec(s){
 function isSafeRedirectUrl(u){
   try {
     const target = new URL(u, location.href);
-    return target.origin === location.origin;
+    // Ensure the redirect stays on the same origin
+    if (target.origin !== location.origin) {
+      return false;
+    }
+
+    // Only allow redirects to relative or root-relative URLs to avoid
+    // user-controlled absolute URLs being used for navigation.
+    // Examples of allowed values for `u`:
+    //   "/path", "path", "path?query", "/path?query#hash"
+    // Examples of disallowed values for `u`:
+    //   "http://example.com", "https://attacker.com/foo"
+    const trimmed = u.trim();
+
+    // If the user supplied an absolute URL, reject it even if it ends up
+    // resolving to the same origin, so that only application-internal,
+    // relative URLs are permitted.
+    if (/^https?:\/\//i.test(trimmed)) {
+      return false;
+    }
+
+    return true;
   } catch (e) {
     return false;
   }
