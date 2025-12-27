@@ -59,7 +59,7 @@ function gen(u){
     console.log("→ redirect:", u);
     if (isSafeRedirectUrl(u)) {
       const safeTarget = new URL(u.trim(), location.origin);
-      location.replace(u));
+      location.replace(u);
     } else {
       console.warn("Unsafe redirect blocked:", u);
     }
