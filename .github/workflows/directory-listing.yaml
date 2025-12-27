@@ -1,14 +1,20 @@
-name: directory-listing
-on: [push]
+name: Deploy Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  pages: write         
+  id-token: write    
+  contents: read   
 
 jobs:
-  build-listing:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Generate directory listings
-        uses: gacts/directory-listing@main
-        with:
-          folder: .
-      - name: Deploy Pages
+
+      - name: Deploy to Pages
         uses: actions/deploy-pages@v4
