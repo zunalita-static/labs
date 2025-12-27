@@ -1,0 +1,14 @@
+name: directory-listing
+on: [push]
+
+jobs:
+  build-listing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate directory listings
+        uses: gacts/directory-listing@main
+        with:
+          folder: .
+      - name: Deploy Pages
+        uses: actions/deploy-pages@v4
